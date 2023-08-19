@@ -1,0 +1,15 @@
+const LoyaltyToken = artifacts.require("LoyaltyToken");
+const LoyaltyPlatform = artifacts.require("LoyaltyPlatform");
+
+module.exports = async function (deployer) {
+  // Deploy LoyaltyToken contract
+  await deployer.deploy(LoyaltyToken);
+  const loyaltyTokenInstance = await LoyaltyToken.deployed();
+
+  // Deploy LoyaltyPlatform contract and pass the address of LoyaltyToken contract
+  await deployer.deploy(LoyaltyPlatform, loyaltyTokenInstance.address);
+  const loyaltyPlatformInstance = await LoyaltyPlatform.deployed();
+
+  console.log("LoyaltyToken contract deployed at:", loyaltyTokenInstance.address);
+  console.log("LoyaltyPlatform contract deployed at:", loyaltyPlatformInstance.address);
+};

@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "./LoyaltyToken.sol";
+
+contract LoyaltyPlatform {
+    LoyaltyToken public loyaltyToken;
+    address public owner;
+    
+    struct Brand {
+        bool isRegistered;
+        uint256 totalTokensEarned;
+    }
+
+    mapping(address => Brand) public brands;
+    mapping(address => bool) public users;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    modifier onlyBrand() {
+        require(brands[msg.sender].isRegistered, "Only registered brands can call this function");
+        _;
+    }
+
+    modifier onlyUser() {
+        require(users[msg.sender], "Only registered users can call this function");
+        _;
+    }
+
+    constructor(address _loyaltyTokenAddress) {
+        loyaltyToken = LoyaltyToken(_loyaltyTokenAddress);
+        owner = msg.sender;
+    }
+
+    function settleTokens(address brandAddress, uint256 amount) external onlyOwner {
+        require(brands[brandAddress].isRegistered, "Brand not registered");
+        require(amount > 0, "Amount must be greater than zero");
+
+        // Transfer tokens from brand to owner for settlement
+        loyaltyToken.transferFrom(brandAddress, owner, amount);
+        brands[brandAddress].totalTokensEarned -= amount;
+    }
+
+    function registerBrand() external {
+        require(!brands[msg.sender].isRegistered, "Brand is already registered");
+
+        brands[msg.sender] = Brand(true, 0);
+    }
+
+    function registerUser() external {
+        require(!users[msg.sender], "User is already registered");
+
+        users[msg.sender] = true;
+    }
+
+    function earnTokens(uint256 amount) external onlyBrand {
+        require(amount > 0, "Amount must be greater than zero");
+
+        // Transfer tokens from brand to this contract
+        loyaltyToken.transferFrom(msg.sender, address(this), amount);
+        brands[msg.sender].totalTokensEarned += amount;
+    }
+
+    function getUserTokenBalance() external view onlyUser returns (uint256) {
+        return loyaltyToken.balanceOf(msg.sender);
+    }
+
+    function getBrandTotalTokensEarned() external view onlyBrand returns (uint256) {
+        return brands[msg.sender].totalTokensEarned;
+    }
+}
